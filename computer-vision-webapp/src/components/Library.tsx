@@ -4,28 +4,21 @@ import React, { useEffect, useState } from 'react';
 interface StoredVideo {
     id: string;
     name: string;
-    dataUrl: string;   // either base64 or a public URL
+    dataUrl: string;
     timestamp: number;
     isVideo: boolean;
 }
 
-// Preloaded static videos in /public/videos.
-// You can add as many as you want here.
+// 1) List your preloaded video references here:
 const PRELOADED_VIDEOS: StoredVideo[] = [
     {
         id: 'pre-1',
-        name: 'Preloaded Video 1',
-        dataUrl: '/videos/preloaded1.mp4',   // path in /public
-        timestamp: 1,                        // older timestamps so user uploads appear above
+        name: 'My Preloaded Video',
+        // public/videos/myvideo.mp4 => accessible at /videos/myvideo.mp4
+        dataUrl: '/videos/myvideo.mp4',
+        timestamp: 1,  // older timestamp so new uploads appear above it
         isVideo: true,
-    },
-    {
-        id: 'pre-2',
-        name: 'Preloaded Video 2',
-        dataUrl: '/videos/preloaded2.mp4',
-        timestamp: 2,
-        isVideo: true,
-    },
+    }
 ];
 
 const Library: React.FC = () => {
@@ -33,24 +26,25 @@ const Library: React.FC = () => {
 
     useEffect(() => {
         const stored = localStorage.getItem('uploadedVideos');
-        if (!stored) {
-            // If no uploaded videos exist yet, seed localStorage with the preloaded ones
-            localStorage.setItem('uploadedVideos', JSON.stringify(PRELOADED_VIDEOS));
-            setVideos(PRELOADED_VIDEOS);
-        } else {
-            // Merge user uploads with preloaded items (if not already merged)
-            const parsed = JSON.parse(stored) as StoredVideo[];
-            const merged = mergePreloadedAndStored(parsed);
-            // Sort newest first
-            merged.sort((a, b) => b.timestamp - a.timestamp);
+        let merged: StoredVideo[] = [];
 
-            // In case preloaded were not already merged, store them
+        if (!stored) {
+            // 2) If localStorage is empty, seed it with your preloaded videos
+            localStorage.setItem('uploadedVideos', JSON.stringify(PRELOADED_VIDEOS));
+            merged = PRELOADED_VIDEOS;
+        } else {
+            const parsed = JSON.parse(stored) as StoredVideo[];
+            merged = mergePreloadedAndStored(parsed);
+            // In case the preloaded video is missing in localStorage, store it:
             localStorage.setItem('uploadedVideos', JSON.stringify(merged));
-            setVideos(merged);
         }
+
+        // Sort newest first
+        merged.sort((a, b) => b.timestamp - a.timestamp);
+        setVideos(merged);
     }, []);
 
-    // Helper to ensure preloaded items are merged only once
+    // 3) Helper to ensure preloaded items merge only once
     function mergePreloadedAndStored(storedVideos: StoredVideo[]): StoredVideo[] {
         const existingIds = new Set(storedVideos.map(v => v.id));
         const merged = [...storedVideos];
@@ -66,7 +60,7 @@ const Library: React.FC = () => {
     return (
         <div className="home-container">
             <h2>Video Library</h2>
-            <p>This page displays preloaded and user-uploaded videos in a blog-like format (newest first).</p>
+            <p>This page displays preloaded and user-uploaded videos.</p>
 
             {videos.map((vid) => (
                 <div key={vid.id} style={{ marginBottom: '2rem' }}>
@@ -79,6 +73,23 @@ const Library: React.FC = () => {
                     ) : (
                         <img src={vid.dataUrl} alt={vid.name} width="600" />
                     )}
+
+                    {/* Simple placeholder table for top 5 plays */}
+                    <table className="plays-table" style={{ marginTop: '10px' }}>
+                        <thead>
+                            <tr>
+                                <th>Play</th>
+                                <th>Probability</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td>Play 1</td><td>25%</td></tr>
+                            <tr><td>Play 2</td><td>20%</td></tr>
+                            <tr><td>Play 3</td><td>15%</td></tr>
+                            <tr><td>Play 4</td><td>10%</td></tr>
+                            <tr><td>Play 5</td><td>5%</td></tr>
+                        </tbody>
+                    </table>
                 </div>
             ))}
         </div>
