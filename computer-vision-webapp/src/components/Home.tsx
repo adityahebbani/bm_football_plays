@@ -9,46 +9,37 @@ interface VideoData {
 }
 
 const Home: React.FC = () => {
-  const [file, setFile] = useState<File | null>(null);
   const [uploadedVideo, setUploadedVideo] = useState<VideoData | null>(null);
 
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = event.target.files?.[0];
     if (selectedFile) {
-      setFile(selectedFile);
-    }
-  };
+      const formData = new FormData();
+      formData.append('file', selectedFile);
 
-  const handleUpload = async () => {
-    if (!file) return;
+      try {
+        const response = await fetch('/api/upload', {
+          method: 'POST',
+          body: formData,
+        });
 
-    const formData = new FormData();
-    formData.append('file', file);
-
-    try {
-      const response = await fetch('/api/upload', {
-        method: 'POST',
-        body: formData,
-      });
-
-      if (response.ok) {
-        const data: VideoData = await response.json();
-        // Store info about the newly uploaded video.
-        setUploadedVideo(data);
-        setFile(null);
-        alert('File uploaded successfully!');
-      } else {
-        alert('Upload failed.');
+        if (response.ok) {
+          const data: VideoData = await response.json();
+          // Store info about the newly uploaded video.
+          setUploadedVideo(data);
+          alert('File uploaded successfully!');
+        } else {
+          alert('Upload failed.');
+        }
+      } catch (err) {
+        console.error('Error uploading file:', err);
       }
-    } catch (err) {
-      console.error('Error uploading file:', err);
     }
   };
 
   return (
     <div className="home-container">
       <h2>Upload and View on Home Page</h2>
-
       <div className="upload-section">
         <label htmlFor="file-input" className="file-upload-label">
           Choose File
@@ -60,9 +51,6 @@ const Home: React.FC = () => {
           onChange={handleFileChange}
           className="hidden-file-input"
         />
-        <button onClick={handleUpload} disabled={!file}>
-          Upload
-        </button>
       </div>
 
       {/* Show newly uploaded video or image immediately */}
