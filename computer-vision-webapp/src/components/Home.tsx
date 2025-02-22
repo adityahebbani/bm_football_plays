@@ -1,135 +1,86 @@
-// filepath: /Users/adity/Files/bm_front/computer-vision-webapp/src/components/Home.tsx
 import React, { useState } from 'react';
 
+interface VideoData {
+  id: string;
+  name: string;
+  path: string;
+  timestamp: number;
+  isVideo: boolean;
+}
+
 const Home: React.FC = () => {
-    const [file, setFile] = useState<File | null>(null);
-    const [playProbability, setPlayProbability] = useState<number | null>(null);
-    const [isVideo, setIsVideo] = useState<boolean>(false);
+  const [file, setFile] = useState<File | null>(null);
+  const [uploadedVideo, setUploadedVideo] = useState<VideoData | null>(null);
 
-    const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
-        const selectedFile = event.target.files?.[0];
-        if (!selectedFile) return;
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFile = event.target.files?.[0];
+    if (selectedFile) {
+      setFile(selectedFile);
+    }
+  };
 
-        setFile(selectedFile);
-        setIsVideo(selectedFile.type.startsWith('video/'));
-        setPlayProbability(null);
+  const handleUpload = async () => {
+    if (!file) return;
 
-        // Convert file to Data URL for storage
-        const reader = new FileReader();
-        reader.onload = () => {
-            const dataUrl = reader.result as string;
+    const formData = new FormData();
+    formData.append('file', file);
 
-            // Load existing library
-            const stored = localStorage.getItem('uploadedVideos');
-            let videos = stored ? JSON.parse(stored) : [];
+    try {
+      const response = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+      });
 
-            const newEntry = {
-                id: crypto.randomUUID(),
-                name: selectedFile.name,
-                dataUrl,
-                timestamp: Date.now(),
-                isVideo: selectedFile.type.startsWith('video/'),
-            };
-            videos.push(newEntry);
-            localStorage.setItem('uploadedVideos', JSON.stringify(videos));
-        };
-        reader.readAsDataURL(selectedFile);
-    };
+      if (response.ok) {
+        const data: VideoData = await response.json();
+        // Store info about the newly uploaded video.
+        setUploadedVideo(data);
+        setFile(null);
+        alert('File uploaded successfully!');
+      } else {
+        alert('Upload failed.');
+      }
+    } catch (err) {
+      console.error('Error uploading file:', err);
+    }
+  };
 
-    const handleScan = async () => {
-        if (!file) return;
+  return (
+    <div className="home-container">
+      <h2>Upload and View on Home Page</h2>
 
-        const formData = new FormData();
-        formData.append('file', file);
+      <div className="upload-section">
+        <label htmlFor="file-input" className="file-upload-label">
+          Choose File
+        </label>
+        <input
+          id="file-input"
+          type="file"
+          accept="image/*,video/*"
+          onChange={handleFileChange}
+          className="hidden-file-input"
+        />
+        <button onClick={handleUpload} disabled={!file}>
+          Upload
+        </button>
+      </div>
 
-        const response = await fetch('/api/scan', {
-            method: 'POST',
-            body: formData,
-        });
-
-        if (response.ok) {
-            const data = await response.json();
-            setPlayProbability(data.probability);
-        } else {
-            console.error('Error scanning the file');
-        }
-    };
-
-    return (
-        <div className="home-container">
-            <h2>Welcome!</h2>
-            <div className="upload-section">
-                <label htmlFor="file-input" className="file-upload-label">
-                    Upload File
-                </label>
-                <input
-                    id="file-input"
-                    type="file"
-                    accept="image/*,video/*"
-                    onChange={handleFileChange}
-                    className="hidden-file-input"
-                />
-                <button onClick={handleScan} disabled={!file}>Scan</button>
-            </div>
-
-            <div className="media-table-container">
-                <div>
-                    {isVideo && file ? (
-                        <video className="video-player" controls>
-                            <source src={URL.createObjectURL(file)} type={file.type} />
-                            Your browser does not support the video tag.
-                        </video>
-                    ) : (
-                        file && (
-                            <img
-                                className="image-container"
-                                src={URL.createObjectURL(file)}
-                                alt="Uploaded"
-                            />
-                        )
-                    )}
-
-                    {playProbability !== null && (
-                        <div className="probability-display">
-                            <h3>Predicted Play Probability: {playProbability.toFixed(2)}%</h3>
-                        </div>
-                    )}
-                </div>
-
-                <table className="plays-table">
-                    <thead>
-                        <tr>
-                            <th>Play</th>
-                            <th>Probability</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {/* Placeholder rows for future logic */}
-                        <tr>
-                            <td>Play 1</td>
-                            <td>25%</td>
-                        </tr>
-                        <tr>
-                            <td>Play 2</td>
-                            <td>20%</td>
-                        </tr>
-                        <tr>
-                            <td>Play 3</td>
-                            <td>15%</td>
-                        </tr>
-                        <tr>
-                            <td>Play 4</td>
-                            <td>10%</td>
-                        </tr>
-                        <tr>
-                            <td>Play 5</td>
-                            <td>5%</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
+      {/* Show newly uploaded video or image immediately */}
+      {uploadedVideo && (
+        <div style={{ marginTop: '20px' }}>
+          <h3>{uploadedVideo.name}</h3>
+          {uploadedVideo.isVideo ? (
+            <video width="400" controls>
+              <source src={uploadedVideo.path} type="video/mp4" />
+              Your browser does not support the video tag.
+            </video>
+          ) : (
+            <img src={uploadedVideo.path} alt={uploadedVideo.name} width="400" />
+          )}
         </div>
-    );
+      )}
+    </div>
+  );
 };
 
 export default Home;
