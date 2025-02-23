@@ -22,7 +22,7 @@
   },
   "include": [
     "src"
-  ],
+, "server/visionModelIntegration.ts"  ],
   "exclude": [
     "node_modules"
   ]
