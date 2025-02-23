@@ -3,6 +3,7 @@ const path = require('path');
 const fs = require('fs');
 const multer = require('multer');
 const { v4: uuid } = require('uuid');
+const { spawnSync } = require('child_process'); // <-- added for invoking python script
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -56,13 +57,13 @@ function loadPreloadedVideos() {
 // Load preexisting videos when the server starts
 loadPreloadedVideos();
 
-// 5) Endpoint: Upload a video, store in "uploads" folder, and add to "videos" array
+// 5) Endpoint: Upload a video, store in "uploads" folder, process it if video, and add to "videos" array
 app.post('/api/upload', upload.single('file'), (req, res) => {
   if (!req.file) {
     return res.status(400).send('No file uploaded.');
   }
 
-  const newVideo = {
+  let newVideo = {
     id: uuid(),
     name: req.file.originalname,
     // Public route users can access:
@@ -70,6 +71,29 @@ app.post('/api/upload', upload.single('file'), (req, res) => {
     timestamp: Date.now(),
     isVideo: req.file.mimetype.startsWith('video/'),
   };
+
+  if (newVideo.isVideo) {
+    // Ensure a "processed" folder exists inside the uploads folder.
+    const processedFolder = path.join(uploadFolder, 'processed');
+    if (!fs.existsSync(processedFolder)) {
+      fs.mkdirSync(processedFolder);
+    }
+
+    const inputPath = req.file.path;
+    const outputFilename = uuid() + path.extname(req.file.originalname);
+    const outputPath = path.join(processedFolder, outputFilename);
+
+    // Call the process_video.py script synchronously.
+    const result = spawnSync('python', ['process_video.py', inputPath, outputPath]);
+    if(result.error) {
+      console.error('Error processing video:', result.error);
+      return res.status(500).send('Error processing video.');
+    }
+
+    // Update newVideo path to point to the processed video.
+    newVideo.path = '/uploads/processed/' + outputFilename;
+  }
+
   videos.push(newVideo);
   return res.json(newVideo);
 });
