@@ -6,6 +6,7 @@ interface VideoData {
   path: string;
   timestamp: number;
   isVideo: boolean;
+  formation?: string;
 }
 
 const Home: React.FC = () => {
@@ -25,7 +26,6 @@ const Home: React.FC = () => {
 
         if (response.ok) {
           const data: VideoData = await response.json();
-          // Store info about the newly uploaded video.
           setUploadedVideo(data);
           alert('File uploaded successfully!');
         } else {
@@ -63,7 +63,14 @@ const Home: React.FC = () => {
               Your browser does not support the video tag.
             </video>
           ) : (
-            <img src={uploadedVideo.path} alt={uploadedVideo.name} width="400" />
+            <>
+              <img src={uploadedVideo.path} alt={uploadedVideo.name} width="400" />
+              {uploadedVideo.formation && (
+                <p style={{ fontWeight: 'bold', marginTop: '10px' }}>
+                  Formation: {uploadedVideo.formation}
+                </p>
+              )}
+            </>
           )}
         </div>
       )}
