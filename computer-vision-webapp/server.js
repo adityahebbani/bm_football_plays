@@ -80,7 +80,7 @@ app.post('/api/upload', upload.single('file'), (req, res) => {
     }
 
     const inputPath = req.file.path;
-    const outputFilename = uuid() + path.extname(req.file.originalname);
+    const outputFilename = uuid() + '.mp4';
     const outputPath = path.join(processedFolder, outputFilename);
 
     // Call the process_video.py script synchronously.
