@@ -86,7 +86,8 @@ def process_video(input_path, output_path):
     height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
     print("Frame dimensions (width x height): {} x {}".format(width, height))
     
-    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+    # Use 'avc1' codec for H.264 encoding.
+    fourcc = cv2.VideoWriter_fourcc(*'avc1')
     out = cv2.VideoWriter(output_path, fourcc, fps, (width, height))
     if not out.isOpened():
         print("Error: Could not open output video for writing.")
@@ -113,7 +114,6 @@ def process_video(input_path, output_path):
             print(f"Running inference on frame {frame_count} (second {current_sec})")
             cached_boxes = get_boxes(frame)
         else:
-            # Otherwise, re-use the previously cached boxes.
             if frame_count % round_fps == 1:
                 print(f"Using cached boxes for second {current_sec}")
     
